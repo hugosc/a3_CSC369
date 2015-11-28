@@ -44,8 +44,8 @@ void print_inode(struct ext2_inode * inode, unsigned int inode_num) {
 }
 
 void print_dir_entry(struct ext2_dir_entry_2 * dir_entry) {
-	printf("Inode: %u rec_len: %u name_len: %u type= %c ", 
-		dir_entry->inode, dir_entry->rec_len, dir_entry->name_len, dir_entry->type);
+	printf("Inode: %u rec_len: %u name_len: %u type= %u ", 
+		dir_entry->inode, dir_entry->rec_len, dir_entry->name_len, dir_entry->file_type);
 	printf("name= %.*s\n", dir_entry->name_len, dir_entry->name);
 }
 
@@ -56,17 +56,22 @@ void print_inode_dirs(struct ext2_inode * inode, unsigned inode_num) {
 	unsigned int i;
 
 	char * list_ptr = NULL;
-	char * list_end = disk + (inode-i_block[i]+1)*EXT2_BLOCK_SIZE;
+	char * list_end = NULL;
 
 	struct ext2_dir_entry_2 * dir_entry;
 
 	for (i = 0; i < 12; i++) {
-		printf("DIR BLOCK NUM: %u (for inode %u", inode->i_block[i], inode_num);
-		block_ptr = disk + inode-i_block[i]*EXT2_BLOCK_SIZE;
+		if (inode->i_block[i]) {
+			printf("DIR BLOCK NUM: %u (for inode %u", inode->i_block[i], inode_num);
+			list_ptr = disk + inode->i_block[i]*EXT2_BLOCK_SIZE;
+			list_end = disk + (inode->i_block[i]+1)*EXT2_BLOCK_SIZE;
+		} else {
+			continue;
+		}
 		do {
-			dir_entry = (struct ext2_dir_entry_2 * )block_ptr;
+			dir_entry = (struct ext2_dir_entry_2 * )list_ptr;
 			print_dir_entry(dir_entry);
-			block_ptr += dir_entry->rec_len;
+			list_ptr += dir_entry->rec_len;
 		} while (list_ptr < list_end);
 	}
 }
@@ -97,7 +102,7 @@ void print_inodes(unsigned int it_offset, unsigned int bm_offset) {
 	for (i = 0; i < 4; i++) {
 		byte = bitmap[i];
 		for (j = 0; j < 8; j++) {
-			if (count > EXT2_GOOD_OLD_FIRST_INO && ((byte >> j) & 1)) {
+			if ((count > EXT2_GOOD_OLD_FIRST_INO && ((byte >> j) & 1)) || count == EXT2_ROOT_INO) {
 				curr_node = inode_table + (count-1);
 				print_inode_dirs(curr_node, count);
 			}
@@ -149,7 +154,7 @@ int main(int argc, char **argv) {
 	printf("Inode bitmap: ");
 	print_bitmap(gd->bg_inode_bitmap*EXT2_BLOCK_SIZE, 4);
 
-	print_inodes(gb->bg_inode_table*EXT2_BLOCK_SIZE, gb->bg_inode_bitmap*EXT2_BLOCK_SIZE);
+	print_inodes(gd->bg_inode_table*EXT2_BLOCK_SIZE, gd->bg_inode_bitmap*EXT2_BLOCK_SIZE);
     
     return 0;
 }
