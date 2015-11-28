@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "ext2.h"
+
+
 unsigned char *disk;
 
 void print_bitmap(unsigned int offset, unsigned int num_bytes) {
@@ -40,27 +42,35 @@ void print_inode(struct ext2_inode * inode, unsigned int inode_num) {
 	}
 	putchar('\n');
 }
-/*
+
+void print_dir_entry(struct ext2_dir_entry_2 * dir_entry) {
+	printf("Inode: %u rec_len: %u name_len: %u type= %c ", 
+		dir_entry->inode, dir_entry->rec_len, dir_entry->name_len, dir_entry->type);
+	printf("name= %.*s\n", dir_entry->name_len, dir_entry->name);
+}
+
 void print_inode_dirs(struct ext2_inode * inode, unsigned inode_num) {
+
+	if(!(inode->i_mode & EXT2_S_IFDIR)) return;
 
 	unsigned int i;
 
-	char * blocks;
+	char * list_ptr = NULL;
+	char * list_end = disk + (inode-i_block[i]+1)*EXT2_BLOCK_SIZE;
+
+	struct ext2_dir_entry_2 * dir_entry;
 
 	for (i = 0; i < 12; i++) {
-		printf("DIR BLOCK NUM: %u (for inode %u", i, inode_num);
+		printf("DIR BLOCK NUM: %u (for inode %u", inode->i_block[i], inode_num);
+		block_ptr = disk + inode-i_block[i]*EXT2_BLOCK_SIZE;
+		do {
+			dir_entry = (struct ext2_dir_entry_2 * )block_ptr;
+			print_dir_entry(dir_entry);
+			block_ptr += dir_entry->rec_len;
+		} while (list_ptr < list_end);
 	}
-		
-	type, inode->i_size, inode->i_links_count, inode->i_blocks);
-
-	printf("Blocks:  ");
-	for (i = 0; i < 15; i++) {
-		if (inode->i_block[i])
-			printf("%u ", inode->i_block[i]);
-	}
-	putchar('\n');
 }
-*/
+
 void print_inodes(unsigned int it_offset, unsigned int bm_offset) {
 	struct ext2_inode * inode_table = (struct ext2_inode *)(disk + it_offset);
 	char * bitmap = disk + bm_offset;
@@ -81,7 +91,7 @@ void print_inodes(unsigned int it_offset, unsigned int bm_offset) {
 			count++;
 		}
 	}
-	/*
+	
 	count = 1;
 
 	for (i = 0; i < 4; i++) {
@@ -94,8 +104,22 @@ void print_inodes(unsigned int it_offset, unsigned int bm_offset) {
 			count++;
 		}
 	}
+}
 
-	*/
+void print_super_block(struct ext2_super_block * sb) {
+	printf("Inodes: %u\n", sb->s_inodes_count);
+    printf("Blocks: %u\n", sb->s_blocks_count);
+	printf("Inode size: %u\n", 1024 / sb->s_inodes_per_group);
+}
+
+void print_group_desc(struct ext2_group_desc * gd) {
+	printf("Block group:\n");
+    printf("\tblock bitmap: %d\n", gd->bg_block_bitmap);
+    printf("\tinode bitmap: %d\n", gd->bg_inode_bitmap);
+    printf("\tinode table: %d\n", gd->bg_inode_table);
+    printf("\tfree blocks: %u\n", gd->bg_free_blocks_count);
+    printf("\tfree inodes: %u\n", gd->bg_free_inodes_count);
+    printf("\tused_dirs: %d\n", gd->bg_used_dirs_count);
 }
 
 int main(int argc, char **argv) {
@@ -113,23 +137,17 @@ int main(int argc, char **argv) {
     }
 
     struct ext2_super_block *sb = (struct ext2_super_block *)(disk + 1024);
-    struct ext2_group_desc * gb = (struct ext2_group_desc *)(disk + 2048);
-    printf("Inodes: %u\n", sb->s_inodes_count);
-    printf("Blocks: %u\n", sb->s_blocks_count);
-	printf("Inode size: %u\n", 1024 / sb->s_inodes_per_group);
-    printf("Block group:\n");
-    printf("\tblock bitmap: %d\n", gb->bg_block_bitmap);
-    printf("\tinode bitmap: %d\n", gb->bg_inode_bitmap);
-    printf("\tinode table: %d\n", gb->bg_inode_table);
-    printf("\tfree blocks: %u\n", gb->bg_free_blocks_count);
-    printf("\tfree inodes: %u\n", gb->bg_free_inodes_count);
-    printf("\tused_dirs: %d\n", gb->bg_used_dirs_count);
+    struct ext2_group_desc * gd = (struct ext2_group_desc *)(disk + 2048);
+
+    print_super_block(sb);
+
+    print_group_desc(gd);
 
 	printf("Block bitmap: ");
-	print_bitmap(gb->bg_block_bitmap*EXT2_BLOCK_SIZE, 16);
+	print_bitmap(gd->bg_block_bitmap*EXT2_BLOCK_SIZE, 16);
+
 	printf("Inode bitmap: ");
-	print_bitmap(gb->bg_inode_bitmap*EXT2_BLOCK_SIZE, 4);
-	putchar('\n');
+	print_bitmap(gd->bg_inode_bitmap*EXT2_BLOCK_SIZE, 4);
 
 	print_inodes(gb->bg_inode_table*EXT2_BLOCK_SIZE, gb->bg_inode_bitmap*EXT2_BLOCK_SIZE);
     
