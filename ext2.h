@@ -1,3 +1,5 @@
+#ifndef EXT2_H
+#define EXT2_H
 /* MODIFIED by Karen Reid for CSC369
  * to remove some of the unnecessary components */
 
@@ -14,7 +16,10 @@
  *  Copyright (C) 1991, 1992  Linus Torvalds
  */
 
-
+/*
+ * Macros by Hugo
+ */
+#define EXT2_MAX_FNAME_LEN 255
 
 /*
  * Special inode numbers
@@ -27,7 +32,7 @@
 #define EXT2_GOOD_OLD_FIRST_INO	11
 
 #define EXT2_BLOCK_SIZE     1024
-#define	EXT2_ADDR_PER_BLOCK EXT2_BLOCK_SIZE / sizeof (unsigned int))
+#define	EXT2_ADDR_PER_BLOCK (EXT2_BLOCK_SIZE / sizeof (unsigned int))
 
 
 /*
@@ -216,6 +221,5 @@ enum {
 	EXT2_FT_MAX
 };
 
-
-
+#endif //EXT2_H
 
