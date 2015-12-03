@@ -82,6 +82,7 @@ struct ext2_inode * find_inode(const char * path_name) {
 		while (path_name[next_char] != '/' && next_char < pname_len) {
 			name_buffer[i++] = path_name[next_char++];
 		}
+		next_char++;
 		name_buffer[i] = '\0';
 		if (strlen(name_buffer)) {
 			struct ext2_dir_entry_2 * dir_entry = find_dir_entry(inode_it, name_buffer);
