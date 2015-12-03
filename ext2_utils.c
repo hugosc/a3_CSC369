@@ -79,7 +79,7 @@ struct ext2_inode * find_inode(const char * path_name) {
 	unsigned int pname_len = strlen(path_name);
 	while(next_char < pname_len) {
 		unsigned int i = 0;
-		while (path_name[next_char] == '/' && next_char < pname_len) {
+		while (path_name[next_char] != '/' && next_char < pname_len) {
 			name_buffer[i++] = path_name[next_char++];
 		}
 		name_buffer[i] = '\0';
