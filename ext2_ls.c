@@ -8,5 +8,6 @@ int main(int argc, char **argv) {
     }
     ext2_init(argv[1]);
 
+    struct ext2_inode * inode = find_inode("/");
     return 0;
 }
