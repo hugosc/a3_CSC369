@@ -7,4 +7,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
     ext2_init(argv[1]);
+
+    return 0;
 }
