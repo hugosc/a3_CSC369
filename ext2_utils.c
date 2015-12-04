@@ -8,8 +8,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#define BLOCK_PTR(i) (disk + (i)*EXT2_BLOCK_SIZE)
-
 unsigned char * disk;
 struct ext2_super_block super_block;
 
@@ -25,7 +23,11 @@ int ext2_init(const char * disk_image) {
 }
 
 struct ext2_inode * inode_by_index(unsigned int index) {
-	return NULL;
+	unsigned int group_no = (index-1)/super_block.s_inodes_per_group;
+	unsigned int local_index = (index-1)%super_block.s_inodes_per_group;
+	struct ext2_group_desc * gd = (struct ext2_group_desc *)(GROUP_PTR(group_no) + 2*EXT2_BLOCK_SIZE);
+	struct ext2_inode * table = (struct ext2_inode*)BLOCK_PTR(gd->bg_inode_table);
+	return table + local_index;
 }
 
 struct ext2_dir_entry_2 * search_dir_list(const unsigned char * list, const char * entry_name) {
