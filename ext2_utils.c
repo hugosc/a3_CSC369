@@ -120,9 +120,8 @@ struct ext2_inode * find_inode(const char * path_name) {
 	return inode_it;
 }
 
-unsigned int bitmap_first_unset(unsigned char* bitmap, unsigned int numbytes) {
+int bitmap_first_unset(unsigned char* bitmap, unsigned int numbytes) {
 
-	unsigned int pos = -1;
 	unsigned int i, j;
 
 	for (i = 0; i < numbytes; i++) {
@@ -131,12 +130,11 @@ unsigned int bitmap_first_unset(unsigned char* bitmap, unsigned int numbytes) {
 
 		for (j = 0; j < 8; j++) {
 			if (!((byte >> j) & 1)) {
-				pos = 8*i + j;
-				break;
+				return 8*i + j;
 			}
 		}
 	}
-	return pos;
+	return -1;
 }
 
 void bitmap_set(unsigned char * bitmap, unsigned int pos) {
@@ -159,10 +157,12 @@ unsigned int allocate_block() {
 		if (gd->bg_free_blocks_count > 0) {
 
 			unsigned char * block_bitmap = BLOCK_PTR(gd->bg_block_bitmap);
-			unsigned int i, bit_pos, block_pos;
+			unsigned int i, block_pos;
+			int bit_pos;
 
 			bit_pos = bitmap_first_unset(block_bitmap,16);
 			block_pos = bit_pos + curr_block + super_block.s_first_data_block;
+			if (bit_pos < 0) return 0;
 			bitmap_set(block_bitmap,bit_pos);
 			gd->bg_free_blocks_count--;
 			return block_pos;
