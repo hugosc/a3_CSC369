@@ -13,5 +13,7 @@ extern struct ext2_super_block super_block;
 
 int ext2_init(const char * disk_image);
 struct ext2_inode* find_inode(const char * filepath);
+unsigned int allocate_block();
+unsigned int allocate_inode();
 
 #endif //EXT2_UTILS_H

@@ -1,4 +1,5 @@
 #include "ext2_utils.h"
+#include "ext2.h"
 #include <stdio.h>
 
 void print_list_names(const unsigned char * list) {
@@ -29,7 +30,7 @@ void print_dir_entries(const struct ext2_inode * inode) {
 int main(int argc, char **argv) {
 
     if(argc != 3) {
-        fprintf(stderr, "Usage: readimg <image file name>\n");
+        fprintf(stderr, "Usage: ext2_ls <image file name> <file path>\n");
         exit(1);
     }
     ext2_init(argv[1]);
