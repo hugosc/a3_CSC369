@@ -44,7 +44,7 @@ struct ext2_dir_entry_2 * search_dir_list(const unsigned char * list, const char
 
 		dir_entry = (struct ext2_dir_entry_2 *)list_ptr;
 
-		if (strcmp(dir_entry->name, entry_name) == 0)
+		if (strncmp(dir_entry->name, entry_name, dir_entry->name_len) == 0)
 			return dir_entry;
 		list_ptr += dir_entry->rec_len;
 	} while (list_ptr < list_end);
@@ -111,10 +111,14 @@ unsigned int find_inode(const char * path_name) {
 			struct ext2_dir_entry_2 * dir_entry = find_dir_entry(
 				inode_by_index(inode_it), name_buffer);
 
-			if (dir_entry == NULL || dir_entry->file_type != EXT2_FT_DIR) {
+			if (dir_entry == NULL) {
 				return 0;
 			} else {
 				inode_it = dir_entry->inode;
+				if (!(inode_by_index(inode_it)->i_mode & EXT2_S_IFDIR)
+				&& next_char < pname_len) {
+					return 0;
+				}
 			}
 		}
 	}
@@ -202,7 +206,7 @@ unsigned int allocate_inode() {
 
 void split_filepath(const char * fpath, char * last_token, char * rest) {
 
-	int pos, sz;
+	int pos = 0, sz = 0;
 	int i = 0;
 
 	while (fpath[i] != '\0') {
@@ -253,9 +257,9 @@ int push_dir_entry(struct ext2_inode * inode, struct ext2_dir_entry_2 dir_entry,
 
 			} while (list_ptr < list_end);
 			if (list_ptr != list_end) {
+				dir_entry.rec_len = list_end - list_ptr;
 				(*(struct ext2_dir_entry_2 *)list_ptr) = dir_entry;
 				memcpy(list_ptr + dir_entry_size, entry_name, dir_entry.name_len);
-				((struct ext2_dir_entry_2 *)list_ptr)->rec_len = list_end - list_ptr;
 			} else {
 				continue;
 			}
@@ -268,5 +272,42 @@ int push_dir_entry(struct ext2_inode * inode, struct ext2_dir_entry_2 dir_entry,
 		break;
 	}
 	return 0;
+}
+
+void inode_deep_copy(unsigned int dest, unsigned int source) {
+
+	struct ext2_inode * dest_inode = inode_by_index(dest);
+	struct ext2_inode * source_inode = inode_by_index(source);
+
+	*dest_inode = *source_inode;
+	dest_inode->i_links_count = 1;
+	dest_inode->i_mode |= EXT2_S_IFREG;
+
+	unsigned int i;
+
+	for (i = 0; i < 12; i++) {
+		if (source_inode->i_block[i]) {
+			dest_inode->i_block[i] = allocate_block();
+			memcpy(BLOCK_PTR(dest_inode->i_block[i]), BLOCK_PTR(source_inode->i_block[i]), EXT2_BLOCK_SIZE);
+		} else {
+			dest_inode->i_block[i] = 0;
+		}
+	}
+	if (source_inode->i_block[12]) {
+
+		dest_inode->i_block[12] = allocate_block();
+
+		unsigned int * block_ptrs1 = (unsigned int *)BLOCK_PTR(source_inode->i_block[12]);
+		unsigned int * block_ptrs2 = (unsigned int *)BLOCK_PTR(dest_inode->i_block[12]);
+
+		for(i = 0; i < EXT2_ADDR_PER_BLOCK; i++) {
+			if (block_ptrs1[i]) {
+				block_ptrs2[i] = allocate_block();
+				memcpy(BLOCK_PTR(block_ptrs2[i]), BLOCK_PTR(block_ptrs1[i]), EXT2_BLOCK_SIZE);
+			} else {
+				block_ptrs2[i] = 0;
+			}
+		}
+	}
 }
 

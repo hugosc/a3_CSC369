@@ -3,9 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifndef ENOENT
-#define ENOENT 2
-#endif
 
 char one_dot[] = ".";
 char two_dots[] = "..";
@@ -19,7 +16,7 @@ void init_dir(unsigned int inode_num, unsigned int p_inode_num) {
 	self_dir.name_len = 1;
 	self_dir.file_type = EXT2_FT_DIR;
 
-	prnt_dir.inode = inode_num;
+	prnt_dir.inode = p_inode_num;
 	prnt_dir.name_len = 2;
 	prnt_dir.file_type = EXT2_FT_DIR;
 

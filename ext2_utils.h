@@ -18,5 +18,6 @@ unsigned int allocate_block();
 unsigned int allocate_inode();
 void split_filepath(const char * fpath, char * last_token, char * rest);
 int push_dir_entry(struct ext2_inode * inode, struct ext2_dir_entry_2 dir_entry, char * entry_name);
+void inode_deep_copy(unsigned int dest, unsigned int source);
 
 #endif //EXT2_UTILS_H

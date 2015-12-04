@@ -36,9 +36,17 @@ void print_inode(struct ext2_inode * inode, unsigned int inode_num) {
 	type, inode->i_size, inode->i_links_count, inode->i_blocks);
 
 	printf("Blocks:  ");
-	for (i = 0; i < 15; i++) {
+	for (i = 0; i < 12; i++) {
 		if (inode->i_block[i])
 			printf("%u ", inode->i_block[i]);
+	}
+	if (inode->i_block[12]) {
+		unsigned int * blocks = (unsigned int *)(disk + inode->i_block[12]*EXT2_BLOCK_SIZE);
+		for (i = 0; i < EXT2_ADDR_PER_BLOCK; i++) {
+			if (blocks[i]) {
+				printf("%u ", blocks[i]);
+			}
+		}
 	}
 	putchar('\n');
 }
@@ -62,7 +70,7 @@ void print_inode_dirs(struct ext2_inode * inode, unsigned inode_num) {
 
 	for (i = 0; i < 12; i++) {
 		if (inode->i_block[i]) {
-			printf("DIR BLOCK NUM: %u (for inode %u", inode->i_block[i], inode_num);
+			printf("DIR BLOCK NUM: %u (for inode %u)\n", inode->i_block[i], inode_num);
 			list_ptr = disk + inode->i_block[i]*EXT2_BLOCK_SIZE;
 			list_end = disk + (inode->i_block[i]+1)*EXT2_BLOCK_SIZE;
 		} else {

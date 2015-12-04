@@ -1,6 +1,7 @@
 #include "ext2_utils.h"
 #include "ext2.h"
 #include <stdio.h>
+#include <string.h>
 
 void print_list_names(const unsigned char * list) {
 	struct ext2_dir_entry_2 * dir_entry;
@@ -28,16 +29,27 @@ void print_dir_entries(const struct ext2_inode * inode) {
 
 int main(int argc, char **argv) {
 
+	char * path;
+	char name[256];
+
     if(argc != 3) {
         fprintf(stderr, "Usage: ext2_ls <image file name> <file path>\n");
         exit(1);
     }
-    ext2_init(argv[1]);
+    if (ext2_init(argv[1]) == -1) return -1;
+
+    path = malloc(strlen(argv[2]));
+    split_filepath(argv[2],name,path);
 
     struct ext2_inode * inode = inode_by_index(find_inode(argv[2]));
-	if (inode)
-		print_dir_entries(inode);
-	else
+	if (inode) {
+		if (inode->i_mode & EXT2_S_IFDIR)
+			print_dir_entries(inode);
+		else
+			printf("%s\n", name);
+
+	} else {
 		printf("no such file or diretory\n");
+	}
     return 0;
 }
