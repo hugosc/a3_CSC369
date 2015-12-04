@@ -21,6 +21,10 @@
  */
 #define EXT2_MAX_FNAME_LEN 255
 
+#ifndef ENOENT
+#define ENOENT 2
+#endif
+
 /*
  * Special inode numbers
  */

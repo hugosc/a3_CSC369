@@ -12,8 +12,11 @@ extern unsigned char * disk;
 extern struct ext2_super_block super_block;
 
 int ext2_init(const char * disk_image);
-struct ext2_inode* find_inode(const char * filepath);
+unsigned int find_inode(const char * filepath);
+struct ext2_inode * inode_by_index(unsigned int index);
 unsigned int allocate_block();
 unsigned int allocate_inode();
+void split_filepath(const char * fpath, char * last_token, char * rest);
+int push_dir_entry(struct ext2_inode * inode, struct ext2_dir_entry_2 dir_entry, char * entry_name);
 
 #endif //EXT2_UTILS_H

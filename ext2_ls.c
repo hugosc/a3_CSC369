@@ -8,8 +8,7 @@ void print_list_names(const unsigned char * list) {
 	const unsigned char * list_end = list + EXT2_BLOCK_SIZE;
 	do {
 		dir_entry = (struct ext2_dir_entry_2 *)list_ptr;
-		if (dir_entry->name_len)
-		printf("%s\n",dir_entry->name);
+		printf("%.*s\n",dir_entry->name_len, dir_entry->name);
 		list_ptr += dir_entry->rec_len;
 	} while (list_ptr < list_end);
 }
@@ -35,7 +34,7 @@ int main(int argc, char **argv) {
     }
     ext2_init(argv[1]);
 
-    struct ext2_inode * inode = find_inode(argv[2]);
+    struct ext2_inode * inode = inode_by_index(find_inode(argv[2]));
 	if (inode)
 		print_dir_entries(inode);
 	else

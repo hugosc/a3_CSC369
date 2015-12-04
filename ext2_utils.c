@@ -59,7 +59,7 @@ struct ext2_dir_entry_2 * find_dir_entry(const struct ext2_inode * inode, const 
 	for (i = 0; i < 12; i++) {
 		if (inode->i_block[i]) {
 			dir_entry = search_dir_list(BLOCK_PTR(inode->i_block[i]), entry_name);
-			if (dir_entry && strcmp(dir_entry->name,entry_name) == 0) return dir_entry;
+			if (dir_entry && strncmp(dir_entry->name,entry_name, dir_entry->name_len) == 0) return dir_entry;
 		}
 	}
 	if (inode->i_block[12]) {
@@ -68,7 +68,7 @@ struct ext2_dir_entry_2 * find_dir_entry(const struct ext2_inode * inode, const 
 
 		for(i = 0; i < EXT2_ADDR_PER_BLOCK; i++) {
 			dir_entry = search_dir_list(BLOCK_PTR(block_ptrs[i]), entry_name);
-			if (dir_entry && strcmp(dir_entry->name,entry_name) == 0) return dir_entry;
+			if (dir_entry && strncmp(dir_entry->name,entry_name, dir_entry->name_len) == 0) return dir_entry;
 		}
 	}
 	if (inode->i_block[13]) {
@@ -82,7 +82,7 @@ struct ext2_dir_entry_2 * find_dir_entry(const struct ext2_inode * inode, const 
 			if (ind_block_ptrs[i]) {
 				for(j = 0; j < EXT2_ADDR_PER_BLOCK; j++) {
 					dir_entry = search_dir_list(BLOCK_PTR(ind_block_ptrs[i][j]), entry_name);
-					if (dir_entry && strcmp(dir_entry->name,entry_name) == 0) return dir_entry;
+					if (dir_entry && strncmp(dir_entry->name,entry_name, dir_entry->name_len) == 0) return dir_entry;
 				}
 			}
 		}
@@ -90,9 +90,9 @@ struct ext2_dir_entry_2 * find_dir_entry(const struct ext2_inode * inode, const 
 	return NULL;
 }
 
-struct ext2_inode * find_inode(const char * path_name) {
+unsigned int find_inode(const char * path_name) {
 
-	struct ext2_inode * inode_it = inode_by_index(EXT2_ROOT_INO);
+	unsigned inode_it = EXT2_ROOT_INO;
 	char name_buffer[EXT2_MAX_FNAME_LEN+1];
 	unsigned int next_char = 0;
 	unsigned int pname_len = strlen(path_name);
@@ -108,12 +108,13 @@ struct ext2_inode * find_inode(const char * path_name) {
 		name_buffer[i] = '\0';
 		if (strlen(name_buffer)) {
 
-			struct ext2_dir_entry_2 * dir_entry = find_dir_entry(inode_it, name_buffer);
+			struct ext2_dir_entry_2 * dir_entry = find_dir_entry(
+				inode_by_index(inode_it), name_buffer);
 
 			if (dir_entry == NULL || dir_entry->file_type != EXT2_FT_DIR) {
-				return NULL;
+				return 0;
 			} else {
-				inode_it = inode_by_index(dir_entry->inode);
+				inode_it = dir_entry->inode;
 			}
 		}
 	}
@@ -195,6 +196,76 @@ unsigned int allocate_inode() {
 		}
 		curr_block += super_block.s_blocks_per_group;
 		curr_group += 1;
+	}
+	return 0;
+}
+
+void split_filepath(const char * fpath, char * last_token, char * rest) {
+
+	int pos, sz;
+	int i = 0;
+
+	while (fpath[i] != '\0') {
+		if (fpath[i] != '/') {
+			pos = i;
+			sz = 0;
+			while(fpath[i] != '/' && fpath[i] != '\0') {
+				sz++;
+				i++;
+			}
+		} else {
+			i++;
+		}
+	}
+	strncpy(last_token, fpath + pos, sz);
+	last_token[sz] = '\0';
+	strncpy(rest, fpath, pos);
+	rest[pos] = '\0';
+}
+
+int push_dir_entry(struct ext2_inode * inode, struct ext2_dir_entry_2 dir_entry, char * entry_name) {
+
+	unsigned int i;
+	const unsigned int dir_entry_size = sizeof(struct ext2_dir_entry_2);
+
+	for (i = 0; i < 12; i++) {
+
+		if (inode->i_block[i]) {
+
+			struct ext2_dir_entry_2 * curr_entry;
+			unsigned char * list_ptr = BLOCK_PTR(inode->i_block[i]);
+			unsigned char * list_end = list_ptr + EXT2_BLOCK_SIZE;
+
+			do {
+
+				curr_entry = (struct ext2_dir_entry_2 *)list_ptr;
+				if (list_ptr + curr_entry->rec_len >= list_end) {
+
+					unsigned int real_size = dir_entry_size + curr_entry->name_len;
+
+					if (list_ptr + real_size + dir_entry.name_len + dir_entry_size < list_end) {
+						curr_entry->rec_len = real_size;
+						list_ptr += real_size;
+						break;
+					}
+				}
+				list_ptr += curr_entry->rec_len;
+
+			} while (list_ptr < list_end);
+			if (list_ptr != list_end) {
+				(*(struct ext2_dir_entry_2 *)list_ptr) = dir_entry;
+				memcpy(list_ptr + dir_entry_size, entry_name, dir_entry.name_len);
+				((struct ext2_dir_entry_2 *)list_ptr)->rec_len = list_end - list_ptr;
+			} else {
+				continue;
+			}
+		} else {
+			inode->i_block[i] = allocate_block();
+			dir_entry.rec_len = EXT2_BLOCK_SIZE;
+			memcpy(BLOCK_PTR(inode->i_block[i]) + dir_entry_size, entry_name, dir_entry.name_len);
+			(*(struct ext2_dir_entry_2 *)BLOCK_PTR(inode->i_block[i])) = dir_entry;
+		}
+		break;
 	}
 	return 0;
 }
