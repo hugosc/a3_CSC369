@@ -14,6 +14,7 @@ extern struct ext2_super_block super_block;
 int ext2_init(const char * disk_image);
 unsigned int find_inode(const char * filepath);
 struct ext2_inode * inode_by_index(unsigned int index);
+struct ext2_dir_entry_2 * find_dir_entry(const struct ext2_inode * inode, const char * entry_name);
 unsigned int allocate_block();
 unsigned int allocate_inode();
 void split_filepath(const char * fpath, char * last_token, char * rest);

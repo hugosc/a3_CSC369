@@ -61,6 +61,11 @@ int main(int argc, char **argv) {
 	parent_inode = inode_by_index(p);
 
 	free(path);
+
+	if (find_dir_entry(parent_inode, dirname)) return EEXIST;
+
+	printf("does this happen?\n");
+	
 	if (parent_inode) {
 		push_dir_entry(parent_inode, new_dir, dirname);
 		init_dir(u,p);

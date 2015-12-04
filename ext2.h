@@ -21,10 +21,19 @@
  */
 #define EXT2_MAX_FNAME_LEN 255
 
+
 #ifndef ENOENT
 #define ENOENT 2
 #endif
 
+#ifndef EEXIST
+#define EEXIST 17
+#endif
+
+#ifndef EISDIR
+#define EISDIR 21
+#endif
+ 
 /*
  * Special inode numbers
  */

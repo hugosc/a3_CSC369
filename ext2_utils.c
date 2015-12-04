@@ -44,7 +44,8 @@ struct ext2_dir_entry_2 * search_dir_list(const unsigned char * list, const char
 
 		dir_entry = (struct ext2_dir_entry_2 *)list_ptr;
 
-		if (strncmp(dir_entry->name, entry_name, dir_entry->name_len) == 0)
+		if (strlen(entry_name) <= dir_entry->name_len &&
+			strncmp(dir_entry->name, entry_name, dir_entry->name_len) == 0)
 			return dir_entry;
 		list_ptr += dir_entry->rec_len;
 	} while (list_ptr < list_end);
